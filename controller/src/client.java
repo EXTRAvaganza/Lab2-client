@@ -1,62 +1,46 @@
+import javax.swing.*;
 import java.io.*;
 import java.net.Socket;
 
-public class client implements controller {
-    class reader extends Thread {
-        @Override
-        public void run() {
-            while(true)
-            {
-                try {
-                    System.out.println(in.readLine());
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
-    class writer extends Thread {
-        @Override
-        public void run() {
-
-            while(true)
-            {
-                try {
-                    String word = reader.readLine();
-                    out.write(word + "\n");
-                    out.flush();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
+public class Client implements controller {
+    private String host;
+    private int port;
     private static Socket clientSocket;
-    private static BufferedReader reader;
     private static BufferedReader in;
     private static BufferedWriter out;
-    public client() throws IOException {
+    Client() throws IOException {
         connect();
     }
-    @Override
-    public void connect() throws IOException {
-        try {
-            try {
-                clientSocket = new Socket("localhost", 4400);
-                reader = new BufferedReader(new InputStreamReader(System.in));
-                in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-                out = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream()));
-                new reader().start();
-                new writer().start();
-            } finally { // в любом случае необходимо закрыть сокет и потоки
-                /*System.out.println("Клиент был закрыт...");
-                clientSocket.close();
-                in.close();
-                out.close();
-*/            }
-        } catch (IOException e) {
-            System.err.println(e);
-        }
+    public BufferedReader getReader()
+    {
+        return in;
+    }
+    public BufferedWriter getWriter()
+    {
+        return out;
+    }
 
+    @Override
+    public void connect() {
+        boolean flag = true;
+        String one = "Введите хост";
+        String two = "Введите порт";
+        while(flag) {
+            try {
+                flag = false;
+                host = JOptionPane.showInputDialog(one);
+                port = Integer.parseInt(JOptionPane.showInputDialog(two));
+                clientSocket = new Socket("localhost", 4400);
+            } catch (Exception e) {
+                one = "Проверьте правильность хоста и повторите ввод";
+                two = "Проверьте правильность порта и повторите ввод";
+                flag = true;
+            }
+        }
+        try {
+            in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+            out = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream()));
+        }
+        catch (IOException e){e.printStackTrace();}
     }
 }
