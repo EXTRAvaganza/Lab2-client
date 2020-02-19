@@ -2,13 +2,13 @@ import javax.swing.*;
 import java.io.*;
 import java.net.Socket;
 
-public class Client implements controller {
+public class client implements controller {
     private String host;
     private int port;
     private static Socket clientSocket;
     private static BufferedReader in;
     private static BufferedWriter out;
-    Client() throws IOException {
+    client() throws IOException {
         connect();
     }
     public BufferedReader getReader()
