@@ -44,36 +44,24 @@ public class GUI extends JFrame {
         }
 
         private void employeesParser(Document doc) {
-            switch (doc.getDocumentElement().getAttribute("eventType")) {
-                case "list": {
-
-                    Element element = doc.getDocumentElement();
-                    NodeList nodeList = element.getChildNodes().item(0).getChildNodes();
-                    String[][] data = new String[nodeList.getLength()][6];
-                    for (int i = 0; i < nodeList.getLength(); i++) {
-                        data[i][0] = ((Element) nodeList.item(i)).getAttribute("firstName");
-                        data[i][1] = ((Element) nodeList.item(i)).getAttribute("middleName");
-                        data[i][2] = ((Element) nodeList.item(i)).getAttribute("lastName");
-                        data[i][3] = ((Element) nodeList.item(i)).getAttribute("salary");
-                        data[i][4] = ((Element) nodeList.item(i)).getAttribute("phone");
-                        data[i][5] = ((Element) nodeList.item(i)).getAttribute("department");
-                    }
-                    DefaultTableModel model = (DefaultTableModel) table2.getModel();
-                    clearTable(model);
-                    for (int i = 0; i < nodeList.getLength(); i++)
-                        model.addRow(new Object[]{data[i][2], data[i][0], data[i][1], data[i][3], data[i][4], data[i][5]});
-                    break;
-                }
-                case "add": {
-                    break;
-                }
-                case "del": {
-                    break;
-                }
-                case "change": {
-                    break;
-                }
+            Element element = doc.getDocumentElement();
+            NodeList nodeList = element.getChildNodes().item(0).getChildNodes();
+            String[][] data = new String[nodeList.getLength()][7];
+            for (int i = 0; i < nodeList.getLength(); i++) {
+                data[i][0] = ((Element) nodeList.item(i)).getAttribute("firstName");
+                data[i][1] = ((Element) nodeList.item(i)).getAttribute("middleName");
+                data[i][2] = ((Element) nodeList.item(i)).getAttribute("lastName");
+                data[i][3] = ((Element) nodeList.item(i)).getAttribute("salary");
+                data[i][4] = ((Element) nodeList.item(i)).getAttribute("phone");
+                data[i][5] = ((Element) nodeList.item(i)).getAttribute("department");
+                data[i][6] = ((Element) nodeList.item(i)).getAttribute("id");
             }
+            DefaultTableModel model = (DefaultTableModel) table2.getModel();
+            clearTable(model);
+            for (int i = 0; i < nodeList.getLength(); i++)
+                model.addRow(new Object[]{data[i][6], data[i][2], data[i][0], data[i][1], data[i][3], data[i][4], data[i][5]});
+
+
         }
 
         private void departmentsParser(Document doc) {
@@ -113,6 +101,7 @@ public class GUI extends JFrame {
     private JButton addButton;
     private JButton updateButton;
     private JButton delButton;
+    private JButton delEmpButton;
     private client client;
 
     class reader extends Thread {
@@ -132,8 +121,8 @@ public class GUI extends JFrame {
             }
         }
     }
-    private void updateDeps()
-    {
+
+    private void updateDeps() {
         try {
             client.getWriter().write("-show -department");
             client.getWriter().newLine();
@@ -143,6 +132,19 @@ public class GUI extends JFrame {
             ex.printStackTrace();
         }
     }
+
+    private void updateEmps() {
+        try {
+            client.getWriter().write("-show -employee");
+            client.getWriter().newLine();
+            client.getWriter().flush();
+
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+
+    }
+
     public GUI(String title) throws IOException, ClassNotFoundException, UnsupportedLookAndFeelException, InstantiationException, IllegalAccessException {
         super(title);
         client = new client();
@@ -187,6 +189,7 @@ public class GUI extends JFrame {
         ((DefaultTableModel) table1.getModel()).addColumn("id");
         ((DefaultTableModel) table1.getModel()).addColumn("Имя");
         ((DefaultTableModel) table1.getModel()).addColumn("id - директора");
+        ((DefaultTableModel) table2.getModel()).addColumn("ID - номер");
         ((DefaultTableModel) table2.getModel()).addColumn("Фамилия");
         ((DefaultTableModel) table2.getModel()).addColumn("Имя");
         ((DefaultTableModel) table2.getModel()).addColumn("Отчество");
@@ -236,6 +239,20 @@ public class GUI extends JFrame {
                 updateDeps();
             }
         });
+        delEmpButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    client.getWriter().write("-delete -employee " + Integer.parseInt(JOptionPane.showInputDialog("Введите id удаляемого сотрудника:")));
+                    client.getWriter().newLine();
+                    client.getWriter().flush();
+
+                } catch (NumberFormatException | IOException ex) {
+                    JOptionPane.showMessageDialog(new JOptionPane(), "Вы ввели неверные данные");
+                }
+                updateEmps();
+            }
+        });
     }
 
     private void clearTable(DefaultTableModel table) {
@@ -266,35 +283,42 @@ public class GUI extends JFrame {
         tabbedPane1 = new JTabbedPane();
         panel1.add(tabbedPane1, new com.intellij.uiDesigner.core.GridConstraints(0, 0, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_BOTH, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
         final JPanel panel3 = new JPanel();
-        panel3.setLayout(new com.intellij.uiDesigner.core.GridLayoutManager(2, 2, new Insets(0, 0, 0, 0), -1, -1));
+        panel3.setLayout(new com.intellij.uiDesigner.core.GridLayoutManager(2, 7, new Insets(0, 0, 0, 0), -1, -1));
         tabbedPane1.addTab("Кадры", panel3);
         scrollPane2 = new JScrollPane();
-        panel3.add(scrollPane2, new com.intellij.uiDesigner.core.GridConstraints(0, 0, 1, 2, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_BOTH, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_WANT_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_WANT_GROW, null, null, null, 0, false));
+        panel3.add(scrollPane2, new com.intellij.uiDesigner.core.GridConstraints(0, 0, 1, 7, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_BOTH, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_WANT_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_WANT_GROW, null, null, null, 0, false));
         table2 = new JTable();
         scrollPane2.setViewportView(table2);
+        delEmpButton = new JButton();
+        delEmpButton.setText("Удалить");
+        panel3.add(delEmpButton, new com.intellij.uiDesigner.core.GridConstraints(1, 6, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         addButton = new JButton();
         addButton.setText("Добавить");
-        panel3.add(addButton, new com.intellij.uiDesigner.core.GridConstraints(1, 1, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_EAST, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        panel3.add(addButton, new com.intellij.uiDesigner.core.GridConstraints(1, 5, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_EAST, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final com.intellij.uiDesigner.core.Spacer spacer1 = new com.intellij.uiDesigner.core.Spacer();
+        panel3.add(spacer1, new com.intellij.uiDesigner.core.GridConstraints(1, 3, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_HORIZONTAL, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_WANT_GROW, 1, null, null, null, 0, false));
         updateButton = new JButton();
         updateButton.setText("Обновить");
-        panel3.add(updateButton, new com.intellij.uiDesigner.core.GridConstraints(1, 0, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_EAST, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        panel3.add(updateButton, new com.intellij.uiDesigner.core.GridConstraints(1, 4, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_EAST, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         panel2 = new JPanel();
-        panel2.setLayout(new com.intellij.uiDesigner.core.GridLayoutManager(2, 3, new Insets(0, 0, 0, 0), -1, -1));
+        panel2.setLayout(new com.intellij.uiDesigner.core.GridLayoutManager(2, 5, new Insets(0, 0, 0, 0), -1, -1));
         tabbedPane1.addTab("Отделы", panel2);
         panel2.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(new Color(-16777216)), null));
         scrollPane1 = new JScrollPane();
-        panel2.add(scrollPane1, new com.intellij.uiDesigner.core.GridConstraints(0, 0, 1, 3, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_BOTH, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_WANT_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_WANT_GROW, null, null, null, 0, false));
+        panel2.add(scrollPane1, new com.intellij.uiDesigner.core.GridConstraints(0, 0, 1, 5, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_BOTH, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_WANT_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_WANT_GROW, null, null, null, 0, false));
         table1 = new JTable();
         scrollPane1.setViewportView(table1);
-        button1 = new JButton();
-        button1.setText("Обновить");
-        panel2.add(button1, new com.intellij.uiDesigner.core.GridConstraints(1, 0, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final com.intellij.uiDesigner.core.Spacer spacer2 = new com.intellij.uiDesigner.core.Spacer();
+        panel2.add(spacer2, new com.intellij.uiDesigner.core.GridConstraints(1, 0, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_HORIZONTAL, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_WANT_GROW, 1, null, null, null, 0, false));
         delButton = new JButton();
         delButton.setText("Удалить");
-        panel2.add(delButton, new com.intellij.uiDesigner.core.GridConstraints(1, 1, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        panel2.add(delButton, new com.intellij.uiDesigner.core.GridConstraints(1, 4, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         button2 = new JButton();
         button2.setText("Добавить");
-        panel2.add(button2, new com.intellij.uiDesigner.core.GridConstraints(1, 2, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_EAST, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        panel2.add(button2, new com.intellij.uiDesigner.core.GridConstraints(1, 3, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_EAST, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        button1 = new JButton();
+        button1.setText("Обновить");
+        panel2.add(button1, new com.intellij.uiDesigner.core.GridConstraints(1, 2, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
     }
 
     /**

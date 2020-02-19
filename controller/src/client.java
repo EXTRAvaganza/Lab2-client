@@ -23,7 +23,7 @@ public class client implements controller {
     @Override
     public void connect() {
         boolean flag = true;
-        String one = "Введите хост";
+        String one = "Введите хост (Default: \"localhost\")";
         String two = "Введите порт";
         while(flag) {
             try {
@@ -32,7 +32,7 @@ public class client implements controller {
                 port = Integer.parseInt(JOptionPane.showInputDialog(two));
                 clientSocket = new Socket("localhost", 4400);
             } catch (Exception e) {
-                one = "Проверьте правильность хоста и повторите ввод";
+                one = "Проверьте правильность хоста и повторите ввод (Default: \"localhost\")";
                 two = "Проверьте правильность порта и повторите ввод";
                 flag = true;
             }
