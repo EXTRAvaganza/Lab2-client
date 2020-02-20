@@ -20,13 +20,19 @@ public class GUI extends JFrame {
     class xmlParser {
         public void parser(String str) throws ParserConfigurationException, IOException, SAXException {
             Document document = convertStringToXMLDocument(str);
+            assert document != null;
             Element element = document.getDocumentElement();
-            if (element.getAttribute("docType").equals("message"))
-                messageParser(document);
-            else if (element.getAttribute("docType").equals("Employee"))
-                employeesParser(document);
-            else if (element.getAttribute("docType").equals("departments"))
-                departmentsParser(document);
+            switch (element.getAttribute("docType")) {
+                case "message":
+                    messageParser(document);
+                    break;
+                case "Employee":
+                    employeesParser(document);
+                    break;
+                case "departments":
+                    departmentsParser(document);
+                    break;
+            }
             System.out.println(str);
         }
 
@@ -85,7 +91,7 @@ public class GUI extends JFrame {
             Element element = doc.getDocumentElement();
             NodeList list = element.getElementsByTagName("message");
             if (list.item(0) instanceof Element)
-                System.out.println(((Element) list.item(0)).getAttribute("info"));
+                JOptionPane.showMessageDialog(new JOptionPane(), ((Element) list.item(0)).getAttribute("info"));
         }
     }
 
@@ -158,20 +164,9 @@ public class GUI extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 updateDeps();
-                String temp = "";
-                try {
-                    temp = client.getReader().readLine();
-                    System.out.println(temp);
-                    new xmlParser().parser(temp);
-                } catch (IOException exception) {
-                    exception.printStackTrace();
-                } catch (SAXException ex) {
-                    ex.printStackTrace();
-                } catch (ParserConfigurationException ex) {
-                    ex.printStackTrace();
-                }
-                ;
             }
+
+            ;
         });
         button2.addActionListener(new ActionListener() {
             @Override
@@ -180,12 +175,16 @@ public class GUI extends JFrame {
                 departmentInputDiaog t = new departmentInputDiaog();
                 String temp[] = t.showDialog();
                 try {
+                    Integer.parseInt(temp[1]);
                     client.getWriter().write("-create -department " + temp[0] + " " + temp[1]);
                     client.getWriter().newLine();
                     client.getWriter().flush();
                 } catch (IOException ex) {
                     ex.printStackTrace();
+                } catch (NumberFormatException ex) {
+                    JOptionPane.showMessageDialog(new JOptionPane(), "Проверьте правильность ввода данных(название без пробелов,ID директора - цифры)");
                 }
+
             }
         });
         ((DefaultTableModel) table1.getModel()).addColumn("id");
@@ -278,17 +277,22 @@ public class GUI extends JFrame {
             public void actionPerformed(ActionEvent e) {
                 changeDepDialog dialog = new changeDepDialog();
                 String ID = dialog.getID();
+
                 String newValue = dialog.getNewValue();
                 String attr = dialog.getAttr();
-                System.out.println("-change -department " + ID + " " + attr + " " + newValue);
-                try {
-                    client.getWriter().write("-change -department " + ID + " " + attr + " " + newValue);
-                    client.getWriter().newLine();
-                    client.getWriter().flush();
-                } catch (IOException ex) {
-                    ex.printStackTrace();
+                if (ID.equals(""))
+                    JOptionPane.showMessageDialog(new JOptionPane(), "Не указан ID изменяемого объекта");
+                else if (newValue.equals(""))
+                    JOptionPane.showMessageDialog(new JOptionPane(), "Не указано новое значение");
+                else {
+                    try {
+                        client.getWriter().write("-change -department " + ID + " " + attr + " " + newValue);
+                        client.getWriter().newLine();
+                        client.getWriter().flush();
+                    } catch (IOException ex) {
+                        ex.printStackTrace();
+                    }
                 }
-
             }
         });
     }
