@@ -3,12 +3,16 @@ import java.io.*;
 import java.net.Socket;
 
 public class client implements controller {
-    private String host;
-    private int port;
+
+
     private static Socket clientSocket;
     private static BufferedReader in;
     private static BufferedWriter out;
-    client() throws IOException {
+    private String host = "localhost";
+    private int port = 4400;
+    client(String host,int port) throws IOException {
+        this.host = host;
+        this.port = port;
         connect();
     }
     public BufferedReader getReader()
@@ -22,25 +26,19 @@ public class client implements controller {
 
     @Override
     public void connect() {
-        boolean flag = true;
-        String one = "Введите хост (Default: \"localhost\")";
-        String two = "Введите порт";
-        while(flag) {
-            try {
-                flag = false;
-                host = JOptionPane.showInputDialog(one);
-                port = Integer.parseInt(JOptionPane.showInputDialog(two));
-                clientSocket = new Socket("localhost", 4400);
-            } catch (Exception e) {
-                one = "Проверьте правильность хоста и повторите ввод (Default: \"localhost\")";
-                two = "Проверьте правильность порта и повторите ввод";
-                flag = true;
-            }
-        }
         try {
+            clientSocket = new Socket(host, port);
             in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
             out = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream()));
         }
         catch (IOException e){e.printStackTrace();}
+    }
+    public void close() {
+        try {
+            in.close();
+            out.close();
+            clientSocket.close();
+        }
+        catch (IOException ignored){}
     }
 }

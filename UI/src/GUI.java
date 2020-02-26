@@ -12,10 +12,35 @@ import javax.xml.parsers.ParserConfigurationException;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
 import java.io.IOException;
 import java.io.StringReader;
+import java.net.Socket;
+import java.net.SocketException;
 
 public class GUI extends JFrame {
+    private JPanel panel1;
+    private JButton button1;
+    private JButton button2;
+    private JScrollPane scrollPane1;
+    private JTable table1;
+    private JPanel panel2;
+    private JTabbedPane tabbedPane1;
+    private JScrollPane scrollPane2;
+    private JTable table2;
+    private JButton addButton;
+    private JButton updateButton;
+    private JButton delButton;
+    private JButton delEmpButton;
+    private JButton changeButton;
+    private JButton changeButton1;
+    private JButton searchEmpButton;
+    private JButton searchDepButton;
+    private client client;
+    private String host;
+    private int port;
+    private boolean flagReader = true;
 
     class xmlParser {
         public void parser(String str) throws ParserConfigurationException, IOException, SAXException {
@@ -33,7 +58,6 @@ public class GUI extends JFrame {
                     departmentsParser(document);
                     break;
             }
-            System.out.println(str);
         }
 
         private Document convertStringToXMLDocument(String xmlString) {
@@ -78,11 +102,9 @@ public class GUI extends JFrame {
                 data[i][0] = ((Element) nodeList.item(i)).getAttribute("name");
                 data[i][1] = ((Element) nodeList.item(i)).getAttribute("director");
                 data[i][2] = ((Element) nodeList.item(i)).getAttribute("id");
-                System.out.println(((Element) nodeList.item(i)).getAttribute("name"));
             }
             DefaultTableModel model = (DefaultTableModel) table1.getModel();
             clearTable(model);
-            System.out.println(data[0][0] + data[0][1]);
             for (int i = 0; i < nodeList.getLength(); i++)
                 model.addRow(new Object[]{data[i][2], data[i][0], data[i][1]});
         }
@@ -90,86 +112,111 @@ public class GUI extends JFrame {
         private void messageParser(Document doc) {
             Element element = doc.getDocumentElement();
             NodeList list = element.getElementsByTagName("message");
-            if (list.item(0) instanceof Element)
+            if (list.item(0) instanceof Element) {
+
                 JOptionPane.showMessageDialog(new JOptionPane(), ((Element) list.item(0)).getAttribute("info"));
-        }
-    }
-
-    private JPanel panel1;
-    private JButton button1;
-    private JButton button2;
-    private JScrollPane scrollPane1;
-    private JTable table1;
-    private JPanel panel2;
-    private JTabbedPane tabbedPane1;
-    private JScrollPane scrollPane2;
-    private JTable table2;
-    private JButton addButton;
-    private JButton updateButton;
-    private JButton delButton;
-    private JButton delEmpButton;
-    private JButton changeButton;
-    private JButton changeButton1;
-    private JButton searchEmpButton;
-    private JButton searchDepButton;
-    private client client;
-
-    class reader extends Thread {
-        @Override
-        public void run() {
-            while (true) {
-                try {
-
-                    (new xmlParser()).parser(client.getReader().readLine());
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } catch (SAXException e) {
-                    e.printStackTrace();
-                } catch (ParserConfigurationException e) {
-                    e.printStackTrace();
-                }
             }
         }
     }
 
-    private void updateDeps() {
-        try {
-            client.getWriter().write("-show -department");
-            client.getWriter().newLine();
-            client.getWriter().flush();
+    class reader extends Thread {
+        @Override
+        public void run() {
+            while (flagReader) {
+                try {
+                    String temp = client.getReader().readLine();
+                    if (temp != null)
+                        (new xmlParser()).parser(temp);
+                    else
+                        break;
+                } catch (IOException | ParserConfigurationException | SAXException e) {
+                    JOptionPane.showMessageDialog(new JOptionPane(), "Соединение потеряно. Перезапустите программу");
+                    setFlagReader(false);
+                }
 
-        } catch (IOException ex) {
-            ex.printStackTrace();
+            }
         }
+
+    }
+
+    private void setFlagReader(boolean flag) {
+        flagReader = flag;
+    }
+
+    private void updateDeps() {
+        send("-show -department");
     }
 
     private void updateEmps() {
+        send("-show -employee");
+    }
+
+    private void shutdownWindow() {
+        send("shutdown");
+        client.close();
+    }
+
+    private void send(String info) {
         try {
-            client.getWriter().write("-show -employee");
+            client.getWriter().write(info);
             client.getWriter().newLine();
             client.getWriter().flush();
-
-        } catch (IOException ex) {
-            ex.printStackTrace();
+        } catch (IOException ignored) {
         }
-
     }
 
     public GUI(String title) throws IOException, ClassNotFoundException, UnsupportedLookAndFeelException, InstantiationException, IllegalAccessException {
         super(title);
-        client = new client();
         this.setContentPane(panel1);
         UIManager.setLookAndFeel("javax.swing.plaf.metal.MetalLookAndFeel");
-        this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        this.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+        setConnectInfo();
+        this.addWindowListener(new WindowListener() {
+            @Override
+            public void windowOpened(WindowEvent e) {
+
+            }
+
+            @Override
+            public void windowClosing(WindowEvent e) {
+                setFlagReader(false);
+                shutdownWindow();
+                System.exit(0);
+            }
+
+            @Override
+            public void windowClosed(WindowEvent e) {
+
+            }
+
+            @Override
+            public void windowIconified(WindowEvent e) {
+
+            }
+
+            @Override
+            public void windowDeiconified(WindowEvent e) {
+
+            }
+
+            @Override
+            public void windowActivated(WindowEvent e) {
+
+            }
+
+            @Override
+            public void windowDeactivated(WindowEvent e) {
+
+            }
+        });
         this.pack();
         button1.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 updateDeps();
             }
-
-            ;
         });
+        client = new client(host, port);
         button2.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -178,11 +225,7 @@ public class GUI extends JFrame {
                 String temp[] = t.showDialog();
                 try {
                     Integer.parseInt(temp[1]);
-                    client.getWriter().write("-create -department " + temp[0] + " " + temp[1]);
-                    client.getWriter().newLine();
-                    client.getWriter().flush();
-                } catch (IOException ex) {
-                    ex.printStackTrace();
+                    send("-create -department " + temp[0] + " " + temp[1]);
                 } catch (NumberFormatException ex) {
                     JOptionPane.showMessageDialog(new JOptionPane(), "Проверьте правильность ввода данных(название без пробелов,ID директора - цифры)");
                 }
@@ -206,25 +249,13 @@ public class GUI extends JFrame {
             public void actionPerformed(ActionEvent e) {
                 employeeInputDialog t = new employeeInputDialog();
                 String temp[] = t.showDialog();
-                try {
-                    client.getWriter().write("-create -employee " + temp[1] + " " + temp[0] + " " + temp[2] + " " + temp[5] + " " + temp[3] + " " + temp[4]);
-                    client.getWriter().newLine();
-                    client.getWriter().flush();
-                } catch (IOException ex) {
-                    ex.printStackTrace();
-                }
+                send("-create -employee " + temp[1] + " " + temp[0] + " " + temp[2] + " " + temp[5] + " " + temp[3] + " " + temp[4]);
             }
         });
         updateButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                try {
-                    client.getWriter().write("-show -employee");
-                    client.getWriter().newLine();
-                    client.getWriter().flush();
-                } catch (IOException ex) {
-                    ex.printStackTrace();
-                }
+                send("-show -employee");
             }
         });
         new reader().start();
@@ -232,11 +263,8 @@ public class GUI extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 try {
-                    client.getWriter().write("-delete -department " + Integer.parseInt(JOptionPane.showInputDialog("Введите id удаляемого отдела:")));
-                    client.getWriter().newLine();
-                    client.getWriter().flush();
-
-                } catch (NumberFormatException | IOException ex) {
+                    send("-delete -department " + Integer.parseInt(JOptionPane.showInputDialog("Введите id удаляемого отдела:")));
+                } catch (NumberFormatException ex) {
                     JOptionPane.showMessageDialog(new JOptionPane(), "Вы ввели неверные данные");
                 }
                 updateDeps();
@@ -246,11 +274,8 @@ public class GUI extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 try {
-                    client.getWriter().write("-delete -employee " + Integer.parseInt(JOptionPane.showInputDialog("Введите id удаляемого сотрудника:")));
-                    client.getWriter().newLine();
-                    client.getWriter().flush();
-
-                } catch (NumberFormatException | IOException ex) {
+                    send("-delete -employee " + Integer.parseInt(JOptionPane.showInputDialog("Введите id удаляемого сотрудника:")));
+                } catch (NumberFormatException ex) {
                     JOptionPane.showMessageDialog(new JOptionPane(), "Вы ввели неверные данные");
                 }
                 updateEmps();
@@ -263,14 +288,7 @@ public class GUI extends JFrame {
                 String ID = changeDialog.getID();
                 String newValue = changeDialog.getNewValue();
                 String attr = changeDialog.getAttr();
-                System.out.println(ID + newValue + attr);
-                try {
-                    client.getWriter().write("-change -employee " + ID + " " + attr + " " + newValue);
-                    client.getWriter().newLine();
-                    client.getWriter().flush();
-                } catch (IOException ex) {
-                    ex.printStackTrace();
-                }
+                send("-change -employee " + ID + " " + attr + " " + newValue);
                 updateEmps();
             }
         });
@@ -287,13 +305,7 @@ public class GUI extends JFrame {
                 else if (newValue.equals(""))
                     JOptionPane.showMessageDialog(new JOptionPane(), "Не указано новое значение");
                 else {
-                    try {
-                        client.getWriter().write("-change -department " + ID + " " + attr + " " + newValue);
-                        client.getWriter().newLine();
-                        client.getWriter().flush();
-                    } catch (IOException ex) {
-                        ex.printStackTrace();
-                    }
+                    send("-change -department " + ID + " " + attr + " " + newValue);
                 }
             }
         });
@@ -301,29 +313,34 @@ public class GUI extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 searchEmpDialog t = new searchEmpDialog();
-                try {
-                    client.getWriter().write("-search -employee " + t.getAttr() + " " + t.getValue());
-                    client.getWriter().newLine();
-                    client.getWriter().flush();
-                } catch (IOException ex) {
-                    ex.printStackTrace();
-                }
+                send("-search -employee " + t.getAttr() + " " + t.getValue());
             }
         });
         searchDepButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 searchDepDialog t = new searchDepDialog();
-                try {
-                    client.getWriter().write("-search -department " + t.getAttr() + " " + t.getValue());
-                    client.getWriter().newLine();
-                    client.getWriter().flush();
-                } catch (IOException ex) {
-                    ex.printStackTrace();
-                }
-
+                send("-search -department " + t.getAttr() + " " + t.getValue());
             }
         });
+
+    }
+
+    private void setConnectInfo() {
+        boolean flag = true;
+        String one = "Введите хост (Default: \"localhost\")";
+        String two = "Введите порт";
+        while (flag) {
+            try {
+                flag = false;
+                host = JOptionPane.showInputDialog(one);
+                port = Integer.parseInt(JOptionPane.showInputDialog(two));
+            } catch (Exception e) {
+                one = "Проверьте правильность хоста и повторите ввод (Default: \"localhost\")";
+                two = "Проверьте правильность порта и повторите ввод";
+                flag = true;
+            }
+        }
     }
 
     private void clearTable(DefaultTableModel table) {
